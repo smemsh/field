@@ -84,6 +84,34 @@ field
 
 ____
 
+
+Option Summary
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+options::
+
+  -h, --help            show this help message and exit
+  -F IFSRE, --ifsre IFSRE
+                        input field separator as python regex
+  -R IRSRE, --irsre IRSRE
+                        input record separator as python regex
+  -i IFS, --ifs IFS     input field separator as python string
+  -I IRS, --irs IRS     input record separator as python string
+  -o OFS, --ofs OFS     output field separator string
+  -O ORS, --ors ORS     output record separator string
+  -b BSZ, --bsz BSZ     bytes per read, optional m or k suffix
+  -0, --null            irs is a '\0' char
+  -z, --zero            ors is a '\0' char
+  -r, --regex           positional ifs is a python regex
+  -G, --noedges         discard initial or trailing empty fields
+  -e, --noempty         discard empty fields within a record
+  -E, --noblanks        discard blank records with no fields
+  -N, --noendrec        skip ors after last record was emitted
+  -l, --flushrecs       do individual writes every record
+
+___
+
+
 | scott@smemsh.net
 | https://github.com/smemsh/field
 | https://spdx.org/licenses/GPL-2.0
