@@ -113,5 +113,5 @@ ___
 
 
 | scott@smemsh.net
-| https://github.com/smemsh/field
+| https://github.com/smemsh/field/
 | https://spdx.org/licenses/GPL-2.0
