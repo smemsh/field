@@ -99,8 +99,9 @@ from select import select
 from functools import partial
 from traceback import print_exc
 from os import (
-    getenv, isatty, dup,
-    close as osclose,
+    getenv, isatty, dup, dup2, devnull,
+    open as osopen, close as osclose,
+    O_WRONLY,
     EX_OK as EXIT_SUCCESS,
     EX_SOFTWARE as EXIT_FAILURE,
 )
@@ -357,7 +358,9 @@ def field(rangelist):
             out.write(output)
             if flush: out.flush()
         except BrokenPipeError:
-            exit(EXIT_SUCCESS) # eg "field | head"
+            # https://docs.python.org/3/library/signal.html#note-on-sigpipe
+            dup2(osopen(devnull, O_WRONLY), stdout.fileno())
+            exit(EXIT_SUCCESS)
 
         if lastloop:
             break
