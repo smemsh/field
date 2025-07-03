@@ -294,7 +294,7 @@ def field(rangelist):
             if record: record += buf
             else: record = buf
             if not buf: break
-            if r_isre: records = re.split(delim, record, reflags)
+            if r_isre: records = re.split(delim, record, flags=reflags)
             else: records = record.split(delim)
             record = records.pop()
             yield from records
