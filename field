@@ -287,7 +287,7 @@ def field(rangelist):
     f_isre = args.ifsre or args.regex
     reflags = re.MULTILINE | re.DOTALL
 
-    # readlines() does not accept delim, and no plans (cpython #41622)
+    # readlines() does not accept delim, and no plans (cpython issue 41622)
     def recordize(bufs, delim):
         record = ''
         for buf in bufs:
