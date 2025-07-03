@@ -308,40 +308,42 @@ def field(rangelist):
     # handle iteration ourselves, so last loop can behave differently
     try: record = next(records) # preload first record before entering loop
     except StopIteration: return # early exit, not even one input record
+
     lastloop = False
+    skiprecord = False
 
     while True:
 
         if args.noblanks and not record:
-            continue
+            skiprecord = True
+        else:
+            if f_isre: fields = re.split(ifs, record)
+            else: fields = record.split(ifs)
 
-        if f_isre: fields = re.split(ifs, record)
-        else: fields = record.split(ifs)
+            if args.noedges:
+                indices = list(range(len(fields)))
+                for i in indices: # leading
+                    if not fields[i]: del fields[i]; indices.pop()
+                    else: break
+                for i in range(len(fields) - 1, -1, -1): # trailing
+                    if not fields[i]: del fields[i]
+                    else: break
 
-        if args.noedges:
-            indices = list(range(len(fields)))
-            for i in indices: # leading
-                if not fields[i]: del fields[i]; indices.pop()
-                else: break
-            for i in range(len(fields) - 1, -1, -1): # trailing
-                if not fields[i]: del fields[i]
-                else: break
+            if args.noempty:
+                fields = [f for f in fields if f]
 
-        if args.noempty:
-            fields = [f for f in fields if f]
+            n = len(fields)
+            indices = []
+            for r in ranges:
+                start = r.start or 1
+                end = r.end or n
+                if start < 0: start = n - abs(start) + 1
+                if end < 0: end = n - abs(end) + 1
+                step = 1 if start <= end else -1
+                offsets = range(start - 1, end - 1 + step, step)
+                indices += [i for i in offsets if 0 <= i < n]
 
-        n = len(fields)
-        indices = []
-        for r in ranges:
-            start = r.start or 1
-            end = r.end or n
-            if start < 0: start = n - abs(start) + 1
-            if end < 0: end = n - abs(end) + 1
-            step = 1 if start <= end else -1
-            offsets = range(start - 1, end - 1 + step, step)
-            indices += [i for i in offsets if 0 <= i < n]
-
-        output = ofs.join([fields[i] for i in indices])
+            output = ofs.join([fields[i] for i in indices])
 
         try: record = next(records)
         except StopIteration:
@@ -352,15 +354,17 @@ def field(rangelist):
                 if not ors.endswith(b'\n'):
                     ors += b'\n'
 
-        output += ors
-
-        try:
-            out.write(output)
-            if flush: out.flush()
-        except BrokenPipeError:
-            # https://docs.python.org/3/library/signal.html#note-on-sigpipe
-            dup2(osopen(devnull, O_WRONLY), stdout.fileno())
-            exit(EXIT_SUCCESS)
+        if skiprecord:
+            skiprecord = False
+        else:
+            output += ors
+            try:
+                out.write(output)
+                if flush: out.flush()
+            except BrokenPipeError:
+                # https://docs.python.org/3/library/signal.html#note-on-sigpipe
+                dup2(osopen(devnull, O_WRONLY), stdout.fileno())
+                exit(EXIT_SUCCESS)
 
         if lastloop:
             break
