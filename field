@@ -278,7 +278,7 @@ def parse_fields(rangelist):
             ranges += [FieldRange(**vars(m))]
             continue
         else:
-            bomb(f"bad field range: {fieldrange}")
+            bomb(f"bad field range: \"{fieldrange}\"")
 
     return ranges
 
