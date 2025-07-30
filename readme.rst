@@ -107,7 +107,7 @@ options::
   -N, --noendrec        skip ors after last record was emitted
   -l, --flushrecs       do individual writes every record
 
-___
+____
 
 
 | scott@smemsh.net
