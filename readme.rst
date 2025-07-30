@@ -91,15 +91,13 @@ Option Summary
 options::
 
   -h, --help            show this help message and exit
-  -F IFSRE, --ifsre IFSRE
-                        input field separator as python regex
-  -R IRSRE, --irsre IRSRE
-                        input record separator as python regex
-  -i IFS, --ifs IFS     input field separator as python string
-  -I IRS, --irs IRS     input record separator as python string
-  -o OFS, --ofs OFS     output field separator string
-  -O ORS, --ors ORS     output record separator string
-  -b BSZ, --bsz BSZ     bytes per read, optional m or k suffix
+  -F, --ifsre IFSRE     input field separator as python regex
+  -R, --irsre IRSRE     input record separator as python regex
+  -i, --ifs IFS         input field separator as python string
+  -I, --irs IRS         input record separator as python string
+  -o, --ofs OFS         output field separator string
+  -O, --ors ORS         output record separator string
+  -b, --bsz BSZ         bytes per read, optional m or k suffix
   -0, --null            irs is a '\0' char
   -z, --zero            ors is a '\0' char
   -r, --regex           positional ifs is a python regex
