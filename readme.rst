@@ -90,22 +90,22 @@ Option Summary
 
 options::
 
-  -h, --help            show this help message and exit
-  -F, --ifsre IFSRE     input field separator as python regex
-  -R, --irsre IRSRE     input record separator as python regex
-  -i, --ifs IFS         input field separator as python string
-  -I, --irs IRS         input record separator as python string
-  -o, --ofs OFS         output field separator string
-  -O, --ors ORS         output record separator string
-  -b, --bsz BSZ         bytes per read, optional m or k suffix
-  -0, --null            irs is a '\0' char
-  -z, --zero            ors is a '\0' char
-  -r, --regex           positional ifs is a python regex
-  -G, --noedges         discard initial or trailing empty fields
-  -e, --noempty         discard empty fields within a record
-  -E, --noblanks        discard blank records with no fields
-  -N, --noendrec        skip ors after last record was emitted
-  -l, --flushrecs       do individual writes every record
+  -h, --help         show this help message and exit
+  -F, --ifsre IFSRE  input field separator as python regex
+  -R, --irsre IRSRE  input record separator as python regex
+  -i, --ifs IFS      input field separator as python string
+  -I, --irs IRS      input record separator as python string
+  -o, --ofs OFS      output field separator string
+  -O, --ors ORS      output record separator string
+  -b, --bsz BSZ      bytes per read, optional m or k suffix
+  -0, --null         irs is a '\0' char
+  -z, --zero         ors is a '\0' char
+  -r, --regex        positional ifs is a python regex
+  -G, --noedges      discard initial or trailing empty fields
+  -e, --noempty      discard empty fields within a record
+  -E, --noblanks     discard blank records with no fields
+  -N, --noendrec     skip ors after last record was emitted
+  -l, --flushrecs    do individual writes every record
 
 ____
 
