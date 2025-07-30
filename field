@@ -28,6 +28,7 @@ records:
   - if '-I <value>', uses 'bytes.split(sep="<value>")'
   - if '-R <value>', uses 're.split(r"<value>")'
   - if '-E', empty records in input are discarded
+  - if '-P', empty records in output are discarded
   - if '-N', trailing separator on last record not emitted
   - processes input as bytes, in chunks of io.DEFAULT_BUFFER_SIZE
   - chunk size overridden with '-b/--bsz' (optional k or m suffix)
@@ -174,9 +175,10 @@ def process_args():
     addflag (p, '0', 'null', "irs is a '\\0' char")
     addflag (p, 'z', 'zero', "ors is a '\\0' char")
     addflag (p, 'r', 'regex', "positional ifs is a python regex")
+    addflag (p, 'P', 'purge', "purge output records that would be empty")
     addflag (p, 'G', 'noedges', "discard initial or trailing empty fields")
     addflag (p, 'e', 'noempty', "discard empty fields within a record")
-    addflag (p, 'E', 'noblanks', "discard blank records with no fields")
+    addflag (p, 'E', 'noblanks', "discard blank input records with no fields")
     addflag (p, 'N', 'noendrec', "skip ors after last record was emitted")
     addflag (p, 'l', 'flushrecs', "do individual writes every record")
 
@@ -367,7 +369,7 @@ def field(rangelist):
 
         if skiprecord:
             skiprecord = False
-        else:
+        elif output or not args.purge:
             output += ors
             try:
                 out.write(output)

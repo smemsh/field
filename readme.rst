@@ -31,6 +31,7 @@ field
     - if '-I <value>', uses 'bytes.split(sep="<value>")'
     - if '-R <value>', uses 're.split(r"<value>")'
     - if '-E', empty records in input are discarded
+    - if '-P', empty records in output are discarded
     - if '-N', trailing separator on last record not emitted
     - processes input as bytes, in chunks of io.DEFAULT_BUFFER_SIZE
     - chunk size overridden with '-b/--bsz' (optional k or m suffix)
@@ -103,9 +104,10 @@ options::
   -0, --null         irs is a '\0' char
   -z, --zero         ors is a '\0' char
   -r, --regex        positional ifs is a python regex
+  -P, --purge        purge output records that would be empty
   -G, --noedges      discard initial or trailing empty fields
   -e, --noempty      discard empty fields within a record
-  -E, --noblanks     discard blank records with no fields
+  -E, --noblanks     discard blank input records with no fields
   -N, --noendrec     skip ors after last record was emitted
   -l, --flushrecs    do individual writes every record
 
