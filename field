@@ -18,6 +18,7 @@ fields:
   - if '-r', uses 're.split(r'$1')'
   - if '-i <value>', uses 'bytes.split(sep="<value>")'
   - if '-F <value>', uses 're.split(r"<value>")'
+  - if '-n <number>', splits a maximum of <number> times
   - if $IFS set, splits on its chars: 're.split(f"[{getenv(IFS)}]+")'
   - if '-e', all empty fields are discarded
   - if '-G', only leading or trailing blank fields are discarded
@@ -169,6 +170,7 @@ def process_args():
     addopt  (p, 'o', 'ofs', "output field separator string")
     addopt  (p, 'O', 'ors', "output record separator string")
     addopt  (p, 'b', 'bsz', "bytes per read, optional m or k suffix")
+    addopt  (p, 'n', 'max', "max splits per record, leftover unchanged")
     addflag (p, '0', 'null', "irs is a '\\0' char")
     addflag (p, 'z', 'zero', "ors is a '\\0' char")
     addflag (p, 'r', 'regex', "positional ifs is a python regex")
@@ -226,6 +228,14 @@ def process_args():
 
     irs = args.irsre or unesc(args.irs) or irs
     ors = unesc(args.ors) or ors
+
+    if args.max is not None:
+        try:
+            splits = int(args.max)
+            if splits < 1: raise ValueError
+            args.max = splits
+        except ValueError:
+            bomb("max split must be a positive integer")
 
     if b := args.bsz:
         if m := re.fullmatch(r'(?P<bsz>\d+)(?P<unit>[km]?)', b, re.I):
@@ -285,6 +295,7 @@ def field(rangelist):
 
     r_isre = args.irsre and not args.null
     f_isre = args.ifsre or args.regex
+    splits = args.max or (0 if f_isre else -1)
     reflags = re.MULTILINE | re.DOTALL
 
     # readlines() does not accept delim, and no plans (cpython issue 41622)
@@ -317,8 +328,8 @@ def field(rangelist):
         if args.noblanks and not record:
             skiprecord = True
         else:
-            if f_isre: fields = re.split(ifs, record)
-            else: fields = record.split(ifs)
+            if f_isre: fields = re.split(ifs, record, maxsplit=splits)
+            else: fields = record.split(ifs, maxsplit=splits)
 
             if args.noedges:
                 indices = list(range(len(fields)))

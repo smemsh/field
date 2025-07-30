@@ -21,6 +21,7 @@ field
     - if '-r', uses 're.split(r'$1')'
     - if '-i <value>', uses 'bytes.split(sep="<value>")'
     - if '-F <value>', uses 're.split(r"<value>")'
+    - if '-n <number>', splits a maximum of <number> times
     - if $IFS set, splits on its chars: 're.split(f"[{getenv(IFS)}]+")'
     - if '-e', all empty fields are discarded
     - if '-G', only leading or trailing blank fields are discarded
@@ -98,6 +99,7 @@ options::
   -o, --ofs OFS      output field separator string
   -O, --ors ORS      output record separator string
   -b, --bsz BSZ      bytes per read, optional m or k suffix
+  -n, --max MAX      max splits per record, leftover unchanged
   -0, --null         irs is a '\0' char
   -z, --zero         ors is a '\0' char
   -r, --regex        positional ifs is a python regex
