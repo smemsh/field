@@ -440,4 +440,28 @@ if __name__ == "__main__":
             try: stdout.close()
             finally:
                 try: stderr.flush()
-                finally: stderr.close()
+                finally:
+                    #
+                    # todo: do not understand why required, otherwise get
+                    # (only sometimes):
+                    #
+                    #   object address  : 0x7e46a92290c0
+                    #   object refcount : 3
+                    #   object type     : 0x5f1a2e969ae0
+                    #   object type name: BrokenPipeError
+                    #   object repr     : BrokenPipeError(32, 'Broken pipe')
+                    #   lost sys.stderr
+                    #
+                    # we already flushed stderr.  maybe because it can't be
+                    # flushed since broken pipe and tries to report that error
+                    # on itself.  needs somewhere to dump the buffer it has?
+                    # see also this had to be done in field() for broken pipe
+                    # but for stdout, probably same root issue nowhere to put
+                    # the orphaned buffer
+                    #
+                    # TODO check the buffer length first before doing this?
+                    # is that public in the io object?  are there buffer
+                    # abandon or drain methods that won't elicit error?
+                    #
+                    dup2(osopen(devnull, O_WRONLY), stderr.fileno())
+                    stderr.close()
