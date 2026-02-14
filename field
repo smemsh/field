@@ -211,7 +211,7 @@ def process_args():
                 else:
                     usagex("bad args")
 
-    if not ifs:
+    if ifs is None:
         ifs = getenv('IFS')
         if ifs:
             ifs = f"[{ifsenv}]+"
@@ -331,6 +331,7 @@ def field(rangelist):
             skiprecord = True
         else:
             if f_isre: fields = re.split(ifs, record, maxsplit=splits)
+            elif ifs == '': fields = list(map(int.to_bytes, record)) # per char
             else: fields = record.split(ifs, maxsplit=splits)
 
             if args.noedges:
