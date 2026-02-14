@@ -226,7 +226,9 @@ def process_args():
     if args.zero: ors = '\0'
 
     ifs = args.ifsre or unesc(args.ifs) or ifs
-    ofs = unesc(args.ofs) or ofs
+
+    sep = unesc(args.ofs)
+    ofs = sep if sep is not None else ofs
 
     irs = args.irsre or unesc(args.irs) or irs
     ors = unesc(args.ors) or ors
@@ -293,7 +295,7 @@ def field(rangelist):
 
     g = globals()
     for var in ['ifs', 'irs', 'ofs', 'ors']:
-        if g[var]: g[var] = bytes(g[var], 'utf-8')
+        g[var] = bytes(g[var], 'utf-8')
 
     r_isre = args.irsre and not args.null
     f_isre = args.ifsre or args.regex
@@ -302,7 +304,7 @@ def field(rangelist):
 
     # readlines() does not accept delim, and no plans (cpython issue 41622)
     def recordize(bufs, delim):
-        record = ''
+        record = b''
         for buf in bufs:
             if record: record += buf
             else: record = buf
@@ -331,7 +333,7 @@ def field(rangelist):
             skiprecord = True
         else:
             if f_isre: fields = re.split(ifs, record, maxsplit=splits)
-            elif ifs == '': fields = list(map(int.to_bytes, record)) # per char
+            elif ifs == b'': fields = list(map(int.to_bytes, record)) # chars
             else: fields = record.split(ifs, maxsplit=splits)
 
             if args.noedges:
