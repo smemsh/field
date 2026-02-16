@@ -295,7 +295,8 @@ def field(rangelist):
 
     g = globals()
     for var in ['ifs', 'irs', 'ofs', 'ors']:
-        g[var] = bytes(g[var], 'utf-8')
+        if g[var] is not None:
+                g[var] = bytes(g[var], 'utf-8')
 
     r_isre = args.irsre and not args.null
     f_isre = args.ifsre or args.regex
