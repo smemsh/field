@@ -276,7 +276,7 @@ def parse_fields(rangelist):
                 for endpoint in [m.start, m.end]:
                     if endpoint is not None and int(endpoint) == 0:
                         bomb("range spec '0' (all fields) excludes start/end")
-            del m.isrange
+            del m.isrange  # todo: why? doesn't next run get its own new one?
             ranges += [FieldRange(**vars(m))]
             continue
         else:
