@@ -278,7 +278,6 @@ def parse_fields(rangelist):
                         bomb("range spec '0' (all fields) excludes start/end")
             del m.isrange  # todo: why? doesn't next run get its own new one?
             ranges += [FieldRange(**vars(m))]
-            continue
         else:
             bomb(f"bad field range: \"{fieldrange}\"")
 
