@@ -39,8 +39,9 @@ outdelims:
 
 rangelist:
   - specifier is a comma separated list of ranges
-  - ranges are either single numbers or first-last sequences
-  - unspecified Y in X-Y will default to highest Y in the input
+  - ranges are single field numbers, first-last sequences, or strings
+  - other strings (that are not single or first-last range) output unchanged
+  - unspecified Y in X-Y ranges will default to highest Y in the input
   - if first field in range greater than than last, print reversed
   - if any specified fields do not exist in the record, skip them
   - field '0' is the same as all fields (range '1-')
@@ -261,13 +262,13 @@ class FieldRange:
 
 def parse_fields(rangelist):
     ranges = []
-    for fieldrange in rangelist.split(','):
+    for token in rangelist.split(','):
         match = re.fullmatch(r"""
                 (?P<start>-?\d+)
                 (?P<isrange>-
                     (?P<end>-?\d+)?
                 )?
-            """, fieldrange, re.VERBOSE)
+            """, token, re.VERBOSE)
         if match:
             m = SimpleNamespace(**match.groupdict())
             if not m.isrange:
@@ -279,7 +280,15 @@ def parse_fields(rangelist):
             del m.isrange  # todo: why? doesn't next run get its own new one?
             ranges += [FieldRange(**vars(m))]
         else:
-            bomb(f"bad field range: \"{fieldrange}\"")
+            # anything that isn't a range, we save as strings to print
+            ranges += [token]
+
+            # we used to exit on non-range (instead of adding it to ranges),
+            # but by keeping it, it allows us to intersperse strings with
+            # fields and later we might add some kind of interpolation that
+            # could do interesting things, like substitute the output of a
+            # program, maybe we can use the python 3.14 template strings TODO
+            #bomb(f"bad field range: \"{token}\"")
 
     return ranges
 
@@ -295,7 +304,7 @@ def field(rangelist):
     g = globals()
     for var in ['ifs', 'irs', 'ofs', 'ors']:
         if g[var] is not None:
-                g[var] = bytes(g[var], 'utf-8')
+                g[var] = bytes(g[var], encoding)
 
     r_isre = args.irsre and not args.null
     f_isre = args.ifsre or args.regex
@@ -349,17 +358,23 @@ def field(rangelist):
                 fields = [f for f in fields if f]
 
             n = len(fields)
-            indices = []
+            outlist = []
             for r in ranges:
+                if isinstance(r, str):
+                    # user can intersperse their own strings between fields
+                    outlist += [r.encode(encoding)]
+                    continue
                 start = r.start or 1
                 end = r.end or n
                 if start < 0: start = n - abs(start) + 1
                 if end < 0: end = n - abs(end) + 1
                 step = 1 if start <= end else -1
                 offsets = range(start - 1, end - 1 + step, step)
-                indices += [i for i in offsets if 0 <= i < n]
+                outlist += [i for i in offsets if 0 <= i < n]
 
-            output = ofs.join([fields[i] for i in indices])
+            output = b''
+            for o in outlist:
+                output += o if isinstance(o, bytes) else fields[o]
 
         try: record = next(records)
         except StopIteration:
@@ -408,6 +423,7 @@ if __name__ == "__main__":
 
     args = argv[1:]
     invname = basename(argv[0])
+    encoding = 'utf-8'
 
     # move stdin, pdb needs stdio fds itself
     stdinfd = stdin.fileno()
