@@ -297,6 +297,7 @@ def field(rangelist):
 
     global ors
 
+    encoding = 'utf-8'  # todo: support others?
     ranges = parse_fields(rangelist)
     flush = True if args.flushrecs else False
     out = stdout.buffer
@@ -423,7 +424,6 @@ if __name__ == "__main__":
 
     args = argv[1:]
     invname = basename(argv[0])
-    encoding = 'utf-8'
 
     # move stdin, pdb needs stdio fds itself
     stdinfd = stdin.fileno()
