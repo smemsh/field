@@ -84,13 +84,14 @@ todo:
   - implement a "record" in terms of "field?"
   - flag to discard empty records in output (no non-empty fields)
 """
-
 __url__     = 'https://github.com/smemsh/field/'
 __author__  = 'Scott Mcdermott <scott@smemsh.net>'
 __license__ = 'GPL-2.0'
+__devskel__ = '0.11.0'
+
 
 from sys import exit, hexversion
-if hexversion < 0x030900f0: exit("minpython: %x" % hexversion)
+if hexversion < 0x030a00f0: exit("minpython: %s" % hexversion)
 
 import argparse
 import re
@@ -100,20 +101,23 @@ from sys import argv, stdin, stdout, stderr
 from types import SimpleNamespace
 from select import select
 from functools import partial
-from traceback import print_exc
+
+from os.path import basename
 from os import (
-    getenv, isatty, dup, dup2, devnull,
+    getenv, unsetenv, isatty, dup, dup2, devnull,
     open as osopen, close as osclose,
     O_WRONLY,
     EX_OK as EXIT_SUCCESS,
     EX_SOFTWARE as EXIT_FAILURE,
 )
-from os.path import basename
 
 ###
 
+def msg(*args, **kwargs):
+    print(*args, **kwargs)
+
 def err(*args, **kwargs):
-    print(f"{invname}:", *args, file=stderr, **kwargs)
+    msg(*args, file=stderr, **kwargs)
 
 def bomb(*args, **kwargs):
     err(*args, **kwargs)
@@ -137,6 +141,16 @@ def process_args():
         if s is None: return
         else: return s.encode('raw-unicode-escape').decode('unicode-escape')
 
+    def addopt(p, flagchar, longopt, help=None, /, **kwargs):
+        options = list(("-%s --%s" % (flagchar, longopt)).split())
+        p.add_argument(*options, help=help, **kwargs)
+
+    def addflag(*args, **kwargs):
+        addopt(*args, action='store_true', **kwargs)
+
+    def hasopt(*options):
+        return any([getattr(args, a) for a in [*options]])
+
     # not clear why the interface gives a prefix arg and defaults it, but
     # doesn't allow it to be passed in from anywhere, so we have to override
     #
@@ -154,16 +168,6 @@ def process_args():
         formatter_class = RawTextHelpFormatterEmptyUsageLine,
         usage           = "",
     )
-
-    def addopt(p, flagchar, longopt, help=None, /, **kwargs):
-        options = list(("-%s --%s" % (flagchar, longopt)).split())
-        p.add_argument(*options, help=help, **kwargs)
-
-    def addflag(*args, **kwargs):
-        addopt(*args, action='store_true', **kwargs)
-
-    def hasopt(*options):
-        return any([getattr(args, a) for a in [*options]])
 
     addopt  (p, 'F', 'ifsre', "input field separator as python regex")
     addopt  (p, 'R', 'irsre', "input record separator as python regex")
@@ -183,7 +187,7 @@ def process_args():
     addflag (p, 'N', 'noendrec', "skip ors after last record was emitted")
     addflag (p, 'l', 'flushrecs', "do individual writes every record")
 
-    if not args: usagex("must supply args on stdin")
+    if not args: usagex("must supply invocation arguments or options")
     args, left = p.parse_known_args(args)
 
     n = len(left)
@@ -422,65 +426,67 @@ def main():
 
 if __name__ == "__main__":
 
-    args = argv[1:]
     invname = basename(argv[0])
-
-    # move stdin, pdb needs stdio fds itself
-    stdinfd = stdin.fileno()
-    if not isatty(stdinfd) and select([stdin], [], [])[0]:
-        infile = open(dup(stdinfd), 'rb')
-        osclose(stdinfd)
-        try: stdin = open('/dev/tty')
-        except: pass # no ctty, but then pdb would not be in use
-    else:
-        args = None
-
-    from bdb import BdbQuit
-    debug = int(getenv('DEBUG') or 0)
-    if debug:
-        import pdb
-        from pprint import pp
-        err('debug: enabled')
+    args = argv[1:]
 
     ifs = None; ofs = '\x20'
     irs = "\n"; ors = "\n"
+
+    # move stdio, pdb needs them for itself
+    outfile = stdout
+    stdinfd = stdin.fileno()
+    stdoutfd = stdout.fileno()
+
+    if not isatty(stdinfd) and select([stdin], [], [], 0)[0]:
+        # pdb will need stdio fds, so move and reopen
+        try:
+            infile = open(dup(stdinfd), 'rb')
+            outfile = open(dup(stdoutfd), 'ab')
+            for f in stdinfd, stdoutfd: osclose(f)
+            try:
+                # tty must use fd 0/1 for pdb readline, cpython bug 73582
+                stdin = open('/dev/tty', 'r')
+                stdout = open('/dev/tty', 'a')
+            except:
+                pass  # no ctty, but then pdb would not be in use
+
+        except KeyboardInterrupt:
+            bomb("interrupted")
+    else:
+        bomb("must supply data on stdin")
+
+    from bdb import BdbQuit
+    if debug := int(getenv('DEBUG') or 0):
+        import pdb
+        from os import getpid
+        from time import sleep
+        from pprint import pp
+        err(f"debug: enabled for pid f{getpid()}")
+        unsetenv('DEBUG')  # otherwise forked children hang
+        if debug == 3:
+            # allow attach from pdb since 3.14
+            stopsleep = 0
+            while not stopsleep:
+                sleep(1)
 
     try: main()
     except BdbQuit: bomb("debug: stop")
     except SystemExit: raise
     except KeyboardInterrupt: bomb("interrupted")
     except:
+        from traceback import print_exc
         print_exc(file=stderr)
         if debug: pdb.post_mortem()
         else: bomb("aborting...")
-    finally: # cpython bug 55589
-        try: stdout.flush()
+    finally:  # cpython bug 55589
+        try:
+            outfile.flush()
+            stdout.flush()
         finally:
-            try: stdout.close()
+            try:
+                outfile.close()
+                stdout.close()
             finally:
                 try: stderr.flush()
-                finally:
-                    #
-                    # todo: do not understand why required, otherwise get
-                    # (only sometimes):
-                    #
-                    #   object address  : 0x7e46a92290c0
-                    #   object refcount : 3
-                    #   object type     : 0x5f1a2e969ae0
-                    #   object type name: BrokenPipeError
-                    #   object repr     : BrokenPipeError(32, 'Broken pipe')
-                    #   lost sys.stderr
-                    #
-                    # we already flushed stderr.  maybe because it can't be
-                    # flushed since broken pipe and tries to report that error
-                    # on itself.  needs somewhere to dump the buffer it has?
-                    # see also this had to be done in field() for broken pipe
-                    # but for stdout, probably same root issue nowhere to put
-                    # the orphaned buffer
-                    #
-                    # TODO check the buffer length first before doing this?
-                    # is that public in the io object?  are there buffer
-                    # abandon or drain methods that won't elicit error?
-                    #
-                    dup2(osopen(devnull, O_WRONLY), stderr.fileno())
-                    stderr.close()
+                except: pass
+                finally: stderr.close()
