@@ -216,9 +216,8 @@ def process_args():
                     usagex("bad args")
 
     if ifs is None:
-        ifs = getenv('IFS')
-        if ifs:
-            ifs = f"[{ifsenv}]+"
+        if ifs := getenv('IFS'):
+            ifs = f"[{ifs}]+"
             args.regex = True
 
     if args.null and args.irs:
