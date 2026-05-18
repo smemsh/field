@@ -375,8 +375,10 @@ def field(rangelist):
                 outlist += [i for i in offsets if 0 <= i < n]
 
             output = b''
-            for o in outlist:
-                output += o if isinstance(o, bytes) else fields[o]
+            for i in range(len(outlist)):
+                if not isinstance(outlist[i], bytes):
+                    outlist[i] = fields[i]
+            output += ofs.join(outlist)
 
         try: record = next(records)
         except StopIteration:
