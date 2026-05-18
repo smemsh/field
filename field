@@ -303,7 +303,6 @@ def field(rangelist):
     encoding = 'utf-8'  # todo: support others?
     ranges = parse_fields(rangelist)
     flush = True if args.flushrecs else False
-    out = sys.stdout.buffer
 
     g = globals()
     for var in ['ifs', 'irs', 'ofs', 'ors']:
@@ -385,7 +384,7 @@ def field(rangelist):
             lastloop = True
             if args.noendrec:
                 ors = b''
-            if isatty(sys.stdout.fileno()):
+            if isatty(outfile.fileno()):
                 if not ors.endswith(b'\n'):
                     ors += b'\n'
 
@@ -394,8 +393,8 @@ def field(rangelist):
         elif output or not args.purge:
             output += ors
             try:
-                out.write(output)
-                if flush: out.flush()
+                outfile.write(output)
+                if flush: outfile.flush()
             except BrokenPipeError:
                 # https://docs.python.org/3/library/signal.html#note-on-sigpipe
                 dup2(osopen(devnull, O_WRONLY), sys.stdout.fileno())
