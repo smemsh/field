@@ -87,17 +87,16 @@ todo:
 __url__     = 'https://github.com/smemsh/field/'
 __author__  = 'Scott Mcdermott <scott@smemsh.net>'
 __license__ = 'GPL-2.0'
-__devskel__ = '0.11.0'
+__devskel__ = '0.12.2'
 
-
-from sys import exit, hexversion
-if hexversion < 0x030a00f0: exit("minpython: %s" % hexversion)
+import sys
+if sys.hexversion < 0x030a00f0:
+    sys.exit("minpython: %s" % hexversion)
 
 import argparse
 import re
 
 from io import DEFAULT_BUFFER_SIZE as BUFSIZ
-from sys import argv, stdin, stdout, stderr
 from types import SimpleNamespace
 from select import select
 from functools import partial
@@ -117,11 +116,11 @@ def msg(*args, **kwargs):
     print(*args, **kwargs)
 
 def err(*args, **kwargs):
-    msg(*args, file=stderr, **kwargs)
+    msg(*args, file=sys.stderr, **kwargs)
 
 def bomb(*args, **kwargs):
     err(*args, **kwargs)
-    exit(EXIT_FAILURE)
+    sys.exit(EXIT_FAILURE)
 
 ###
 
@@ -132,8 +131,8 @@ def process_args():
 
     def usagex(*args, **kwargs):
         nonlocal p
-        p.print_help(file=stderr)
-        print(file=stderr)
+        p.print_help(file=sys.stderr)
+        print(file=sys.stderr)
         bomb(*args, **kwargs)
 
     # parse_args() gives escaped strings
@@ -163,7 +162,7 @@ def process_args():
 
     p = argparse.ArgumentParser(
         prog            = invname,
-        description     = __doc__.strip(),
+        description     = __doc__.split("\ntodo:")[0].strip(),
         allow_abbrev    = False,
         formatter_class = RawTextHelpFormatterEmptyUsageLine,
         usage           = "",
@@ -304,7 +303,7 @@ def field(rangelist):
     encoding = 'utf-8'  # todo: support others?
     ranges = parse_fields(rangelist)
     flush = True if args.flushrecs else False
-    out = stdout.buffer
+    out = sys.stdout.buffer
 
     g = globals()
     for var in ['ifs', 'irs', 'ofs', 'ors']:
@@ -386,7 +385,7 @@ def field(rangelist):
             lastloop = True
             if args.noendrec:
                 ors = b''
-            if isatty(stdout.fileno()):
+            if isatty(sys.stdout.fileno()):
                 if not ors.endswith(b'\n'):
                     ors += b'\n'
 
@@ -399,8 +398,8 @@ def field(rangelist):
                 if flush: out.flush()
             except BrokenPipeError:
                 # https://docs.python.org/3/library/signal.html#note-on-sigpipe
-                dup2(osopen(devnull, O_WRONLY), stdout.fileno())
-                exit(EXIT_SUCCESS)
+                dup2(osopen(devnull, O_WRONLY), sys.stdout.fileno())
+                sys.exit(EXIT_SUCCESS)
 
         if lastloop:
             break
@@ -426,18 +425,18 @@ def main():
 
 if __name__ == "__main__":
 
-    invname = basename(argv[0])
-    args = argv[1:]
+    invname = basename(sys.argv[0])
+    args = sys.argv[1:]
 
     ifs = None; ofs = '\x20'
     irs = "\n"; ors = "\n"
 
     # move stdio, pdb needs them for itself
-    outfile = stdout
-    stdinfd = stdin.fileno()
-    stdoutfd = stdout.fileno()
+    outfile = sys.stdout
+    stdinfd = sys.stdin.fileno()
+    stdoutfd = sys.stdout.fileno()
 
-    if not isatty(stdinfd) and select([stdin], [], [], 0)[0]:
+    if not isatty(stdinfd) and select([sys.stdin], [], [], 0)[0]:
         # pdb will need stdio fds, so move and reopen
         try:
             infile = open(dup(stdinfd), 'rb')
@@ -445,8 +444,8 @@ if __name__ == "__main__":
             for f in stdinfd, stdoutfd: osclose(f)
             try:
                 # tty must use fd 0/1 for pdb readline, cpython bug 73582
-                stdin = open('/dev/tty', 'r')
-                stdout = open('/dev/tty', 'a')
+                sys.stdin = open('/dev/tty', 'r')
+                sys.stdout = open('/dev/tty', 'a')
             except:
                 pass  # no ctty, but then pdb would not be in use
 
@@ -475,18 +474,18 @@ if __name__ == "__main__":
     except KeyboardInterrupt: bomb("interrupted")
     except:
         from traceback import print_exc
-        print_exc(file=stderr)
+        print_exc(file=sys.stderr)
         if debug: pdb.post_mortem()
         else: bomb("aborting...")
     finally:  # cpython bug 55589
         try:
             outfile.flush()
-            stdout.flush()
+            sys.stdout.flush()
         finally:
             try:
                 outfile.close()
-                stdout.close()
+                sys.stdout.close()
             finally:
-                try: stderr.flush()
+                try: sys.stderr.flush()
                 except: pass
-                finally: stderr.close()
+                finally: sys.stderr.close()
