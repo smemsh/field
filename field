@@ -378,7 +378,7 @@ def field(rangelist):
             output = b''
             for i in range(len(outlist)):
                 if not isinstance(outlist[i], bytes):
-                    outlist[i] = fields[i]
+                    outlist[i] = fields[outlist[i]]
             output += ofs.join(outlist)
 
         try: record = next(records)
