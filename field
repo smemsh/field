@@ -85,7 +85,7 @@ todo:
 __url__     = 'https://github.com/smemsh/field/'
 __author__  = 'Scott Mcdermott <scott@smemsh.net>'
 __license__ = 'GPL-2.0'
-__devskel__ = '0.12.3'
+__devskel__ = '0.13.1'
 
 import sys
 if sys.hexversion < 0x030a00f0:
@@ -95,6 +95,7 @@ import argparse
 import re
 
 from io import DEFAULT_BUFFER_SIZE as BUFSIZ
+from bdb import BdbQuit
 from types import SimpleNamespace
 from select import select
 from functools import partial
@@ -430,42 +431,43 @@ if __name__ == "__main__":
     ifs = None; ofs = '\x20'
     irs = "\n"; ors = "\n"
 
-    # move stdio, pdb needs them for itself
-    outfile = sys.stdout
+    infile = sys.stdin.buffer
     stdinfd = sys.stdin.fileno()
-    stdoutfd = sys.stdout.fileno()
+    outfile = sys.stdout.buffer
 
-    if not isatty(stdinfd) and select([sys.stdin], [], [], 0)[0]:
-        # pdb will need stdio fds, so move and reopen
-        try:
-            infile = open(dup(stdinfd), 'rb')
-            outfile = open(dup(stdoutfd), 'ab')
-            for f in stdinfd, stdoutfd: osclose(f)
-            try:
-                # tty must use fd 0/1 for pdb readline, cpython bug 73582
-                sys.stdin = open('/dev/tty', 'r')
-                sys.stdout = open('/dev/tty', 'a')
-            except:
-                pass  # no ctty, but then pdb would not be in use
-
-        except KeyboardInterrupt:
-            bomb("interrupted")
-    else:
+    if isatty(stdinfd) or not select([sys.stdin], [], [], 0)[0]:
         args = None
 
-    from bdb import BdbQuit
     if debug := int(getenv('DEBUG') or 0):
-        import pdb
-        from os import getpid
-        from time import sleep
+        from pdb import Pdb
         from pprint import pp
-        err(f"debug: enabled for pid {getpid()}")
+        from inspect import currentframe
+
+        class TtyDebugger:
+            def __init__(self):
+                self.pdb = None
+
+            def _get_pdb(self):
+                if self.pdb is None:
+                    pdbin = open('/dev/tty', 'r')
+                    pdbout = open('/dev/tty', 'a')
+                    self.pdb = Pdb(stdin=pdbin, stdout=pdbout)
+                return self.pdb
+
+            def breakpointhook(self):
+                frame = currentframe().f_back  # breakpoint() caller
+                self._get_pdb().set_trace(frame)
+
+            def post_mortem(self):
+                pdb = self._get_pdb()
+                pdb.reset()
+                pdb.interaction(None, sys.exception())
+
+        err('debug: enabled')
         unsetenv('DEBUG')  # otherwise forked children hang
-        if debug == 3:
-            # allow attach from pdb since 3.14
-            stopsleep = 0
-            while not stopsleep:
-                sleep(1)
+        debugger = TtyDebugger()
+        sys.breakpointhook = debugger.breakpointhook
+        post_mortem = debugger.post_mortem
 
     try: main()
     except BdbQuit: bomb("debug: stop")
@@ -474,16 +476,12 @@ if __name__ == "__main__":
     except:
         from traceback import print_exc
         print_exc(file=sys.stderr)
-        if debug: pdb.post_mortem()
+        if debug: post_mortem()
         else: bomb("aborting...")
     finally:  # cpython bug 55589
-        try:
-            outfile.flush()
-            sys.stdout.flush()
+        try: sys.stdout.flush()
         finally:
-            try:
-                outfile.close()
-                sys.stdout.close()
+            try: sys.stdout.close()
             finally:
                 try: sys.stderr.flush()
                 except: pass
