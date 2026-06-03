@@ -185,7 +185,6 @@ def process_args():
     addflag (p, 'N', 'noendrec', "skip ors after last record was emitted")
     addflag (p, 'l', 'flushrecs', "do individual writes every record")
 
-    if args is None: usagex("must supply data on stdin")
     if not args: usagex("must supply invocation arguments or options")
 
     args, left = p.parse_known_args(args)
@@ -434,9 +433,6 @@ if __name__ == "__main__":
     infile = sys.stdin.buffer
     stdinfd = sys.stdin.fileno()
     outfile = sys.stdout.buffer
-
-    if isatty(stdinfd) or not select([sys.stdin], [], [], 0)[0]:
-        args = None
 
     if debug := int(getenv('DEBUG') or 0):
         from pdb import Pdb
