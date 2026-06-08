@@ -97,7 +97,6 @@ import re
 from io import DEFAULT_BUFFER_SIZE as BUFSIZ
 from bdb import BdbQuit
 from types import SimpleNamespace
-from select import select
 from functools import partial
 
 from os.path import basename
