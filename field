@@ -430,7 +430,6 @@ if __name__ == "__main__":
     irs = "\n"; ors = "\n"
 
     infile = sys.stdin.buffer
-    stdinfd = sys.stdin.fileno()
     outfile = sys.stdout.buffer
 
     if debug := int(getenv('DEBUG') or 0):
